@@ -13,6 +13,7 @@ module Entropy
 import qualified Data.Map as Map
 import Data.Map (Map, keys, elems, mapWithKey)
 import Data.List
+import qualified Data.Set as Set
 import Data.Tuple (swap)
 
 import Data.Numbers.Primes as Primes
@@ -35,17 +36,23 @@ primeStream = 2 : [x | x <- [3..],
                            map fromIntegral                    $
                            primeStream]
 
-fileName   = "primes less than 10e5"
-edgeOfPrimes   = 100000
+twinPrimesStream = 3 : 5 : 7 : (twinFilter . dropWhile (<= 7)) primes where
+     twinFilter (x:y:xs) | y - x == 2 = x : y : twinFilter xs
+                         | otherwise  = twinFilter (y:xs)
+
+fileName   = "data/twin primes less than 10e8"
+edgeOfPrimes   = 100000000
 
 writePrimes = (writeFile fileName . init . tail . show . takeWhile (< edgeOfPrimes)) primes
+
+writeTwinPrimes = (writeFile fileName . init . tail . show . takeWhile (< edgeOfPrimes)) twinPrimesStream
 
 entropy = negate . sum . map (\p -> p * logBase 2 p)
 
 data CharCond = (:|) {leftCc :: Char, rightCc :: Char} deriving (Eq, Read)
 
 instance Show CharCond where
-    show (c :| cc) = show c ++ "|" ++ show cc  
+    show (c :| cc) = show c ++ "|" ++ show cc
 
 instance Ord CharCond where
     compare (a :| b) (a0 :| b0) = (a, b) `compare` (a0, b0)
@@ -58,41 +65,44 @@ instance Ord OrdFirst where
 
 rev (l :| r) = r :| l
 
-toCharCond []  = [] 
-toCharCond [x] = [] 
-toCharCond (x:x0:xs) = (x :| x0) : toCharCond (x0:xs) 
+toCharCond []  = []
+toCharCond [x] = []
+toCharCond (x:x0:xs) = (x :| x0) : toCharCond (x0:xs)
 
-normalizePrev chrFreqs (_ :| cc) frq = let                                
+normalizePrev chrFreqs (_ :| cc) frq = let
                               Just a = Map.lookup cc chrFreqs
-                          in                                 
-                              frq / a                        
+                          in
+                              frq / a
 
-normalizeNext chrFreqs (c :| _) frq = let                                
+normalizeNext chrFreqs (c :| _) frq = let
                               Just a = Map.lookup c chrFreqs
-                          in                                 
-                              frq / a                        
+                          in
+                              frq / a
 
-emptyMap = Map.fromList [(cs :| csNext, 0) | cs <- ',' : ['0'..'9'], csNext <- ',' : ['0'..'9']]
+emptyMap allChars = Map.fromList [(cs :| csNext, 0) | cs <- allChars, csNext <- allChars]
 
 chrCondProbs :: (CharCond -> Double -> Double) -> String -> Map CharCond Double
-chrCondProbs normalize text = mapWithKey normalize $ foldl' ccToFreqs (emptyMap) (toCharCond text) where 
+chrCondProbs normalize text = mapWithKey normalize $ foldl' ccToFreqs (emptyMap allChars) (toCharCond text) where
+    allChars = Set.toAscList . Set.fromList $ text
 
-    ccToFreqs m cc = Map.alter add cc m 
-    
+    ccToFreqs m cc = Map.alter add cc m
+
     add (Just x) = Just $ 1.0 + x
 
-chrCondPrev chrFreqs = chrCondProbs (normalizePrev chrFreqs) 
-chrCondNext chrFreqs = chrCondProbs (normalizeNext chrFreqs) 
+chrCondPrev chrFreqs = chrCondProbs (normalizePrev chrFreqs)
+chrCondNext chrFreqs = chrCondProbs (normalizeNext chrFreqs)
 
 
 fullCondEntropy :: Map CharCond Double -> Map Char Double -> Double
 fullCondEntropy condProbs probs = (negate . sum . elems . mapWithKey f) condProbs where
 
-    f (c :| cc) frq = let 
+    f (c :| cc) frq = let
                           Just condProb = Map.lookup (c :| cc) condProbs
-                          Just prob     = Map.lookup cc probs 
-                      in 
-                          prob * condProb * logBase 2 condProb 
+                          Just prob     = Map.lookup cc probs
+                      in
+                          if abs condProb > 1e-17
+                              then prob * condProb * logBase 2 condProb
+                              else 0
 
 mapTo2D :: Map CharCond Double -> [[Double]]
 mapTo2D = (map . map $ snd) . (foldr to2d []) . (Map.toList) where
@@ -101,14 +111,15 @@ mapTo2D = (map . map $ snd) . (foldr to2d []) . (Map.toList) where
     to2d elem (l@(x:xs):xss) | otherwise                                = [elem] : l : xss
 
 run = do
-    text           <- readFile fileName
+    text           <- (fmap $ filter (/= ',')) (readFile fileName)
+    --text           <- readFile fileName
     let lengthText =  fromIntegral $ length text
     let charFreqs  =  chrFreqs text
     let charProbs  =  fmap (/ genericLength text) $ chrFreqs text
-    let sortAndShow = (\f -> sequence . showColumn . fmap f . sortBy (\(a,b) (a0, b0) -> compare b0 b) . Map.toList) 
+    let sortAndShow = (\f -> sequence . showColumn . fmap f . sortBy (\(a,b) (a0, b0) -> compare b0 b) . Map.toList)
 
     putStrLn "Probabilities of chars"
-    --sortAndShow id charProbs
+    sortAndShow id charProbs
 
     putStrLn "Probabilities of chars on condition, that next one is known"
     let charCondNextProbs  =  chrCondPrev charFreqs text
@@ -121,14 +132,17 @@ run = do
     putStrLn ""
 
     --Entropy
-    putStrLn $ "Entropy = " ++ (show . entropy . elems) charProbs 
+    putStrLn $ "Entropy = " ++ (show . entropy . elems) charProbs
     --Full Conditional Entropy
     putStrLn $ "Full Conditional on previous Entropy = " ++ (show . fullCondEntropy charCondPrevProbs) charProbs
     --Full Conditional Entropy
     putStrLn $ "Full Conditional on next Entropy = " ++ (show . fullCondEntropy charCondNextProbs) charProbs
 
-    sequence . showColumn $ mapTo2D charCondNextProbs
-    plot $ mapTo2D charCondNextProbs
+    --sequence . showColumn $ mapTo2D charCondNextProbs
+    --plot . (map . map $ (logBase 10 . (+1e-3) . abs)) . mapTo2D $ charCondPrevProbs
+    --plot . mapTo2D $ charCondPrevProbs
+    --plot . transpose . (map . map $ (logBase 10 . (+1e-3) . abs)) . mapTo2D $ charCondNextProbs
+    plot . transpose . mapTo2D $ charCondNextProbs
 
 plot xs = r2AxisMain $ heatMapAxis xs
 
@@ -142,9 +156,9 @@ showColumn :: Show a => [a] -> [IO ()]
 showColumn = map (\x -> putStrLn (show x))
 
 chrFreqs :: String -> Map Char Double
-chrFreqs = foldl' chrToFreqs (Map.empty) where 
+chrFreqs = foldl' chrToFreqs (Map.empty) where
 
-    chrToFreqs m chr = Map.alter add chr m 
+    chrToFreqs m chr = Map.alter add chr m
 
-    add Nothing  = Just   1.0 
+    add Nothing  = Just   1.0
     add (Just x) = Just $ 1.0 + x
