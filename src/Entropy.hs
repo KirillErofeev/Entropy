@@ -1,5 +1,4 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
-
 module Entropy
 --       (
 --       Primes.primes
@@ -17,16 +16,6 @@ import qualified Data.Set as Set
 import Data.Tuple (swap)
 
 import Data.Numbers.Primes as Primes
-
-import Diagrams.Backend.Cairo.CmdLine (B, mainWith)
-import Diagrams.Prelude
-
-import qualified Data.Vector as V
-import Linear.V2 as V
-import Control.Lens hiding (transform, ( # ))
-import Plots.Types
-import Plots
-
 
 primeStream :: [Int]
 primeStream = 2 : [x | x <- [3..],
@@ -110,7 +99,7 @@ mapTo2D = (map . map $ snd) . (foldr to2d []) . (Map.toList) where
     to2d elem (l@(x:xs):xss) | (leftCc . fst) elem  == (leftCc . fst) x = (elem : l) : xss
     to2d elem (l@(x:xs):xss) | otherwise                                = [elem] : l : xss
 
-run = do
+runEntropy = do
     text           <- (fmap $ filter (/= ',')) (readFile fileName)
     --text           <- readFile fileName
     let lengthText =  fromIntegral $ length text
@@ -137,20 +126,6 @@ run = do
     putStrLn $ "Full Conditional on previous Entropy = " ++ (show . fullCondEntropy charCondPrevProbs) charProbs
     --Full Conditional Entropy
     putStrLn $ "Full Conditional on next Entropy = " ++ (show . fullCondEntropy charCondNextProbs) charProbs
-
-    --sequence . showColumn $ mapTo2D charCondNextProbs
-    --plot . (map . map $ (logBase 10 . (+1e-3) . abs)) . mapTo2D $ charCondPrevProbs
-    --plot . mapTo2D $ charCondPrevProbs
-    --plot . transpose . (map . map $ (logBase 10 . (+1e-3) . abs)) . mapTo2D $ charCondNextProbs
-    plot . transpose . mapTo2D $ charCondNextProbs
-
-plot xs = r2AxisMain $ heatMapAxis xs
-
-heatMapAxis :: [[Double]] -> Axis B V.V2 Double
-heatMapAxis xs = r2Axis &~ do
-  display colourBar
-  axisExtend .= noExtend
-  heatMap xs $ heatMapSize .= V.V2 10 10
 
 showColumn :: Show a => [a] -> [IO ()]
 showColumn = map (\x -> putStrLn (show x))

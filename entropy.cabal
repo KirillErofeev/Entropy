@@ -20,29 +20,8 @@ library
   build-depends:       base >= 4.7 && < 5
                      , primes
                      , containers
-                     , plot
-                     , plots
-                     --, haskell-plot
-                     , diagrams-lib
-                     , diagrams-core
-                     , diagrams-svg
                      , data-default
-                     , lens >=3.10
-                     , data-default >=0.5
-                     , diagrams-lib >=1.3
-                     , diagrams-cairo >=1.3
-                     , diagrams-contrib >=1.3
-                     , palette
-                     , colour
-                     , containers
-                     , unordered-containers
                      , mtl
-                     , clustering
-                     , void
-                     , vector
-                     , random
-                     , split
-                     , linear
   default-language:    Haskell2010
 
 executable entropy-exe
@@ -51,12 +30,6 @@ executable entropy-exe
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -O2
   build-depends:       base
                      , entropy
-                     , diagrams-cairo
-                     , diagrams-lib 
-                     , vector
-                     , linear
-                     , lens
-                     , plots
   default-language:    Haskell2010
 
 test-suite entropy-test
