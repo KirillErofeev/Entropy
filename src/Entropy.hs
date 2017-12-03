@@ -29,7 +29,7 @@ twinPrimesStream = 3 : 5 : 7 : (twinFilter . dropWhile (<= 7)) primes where
      twinFilter (x:y:xs) | y - x == 2 = x : y : twinFilter xs
                          | otherwise  = twinFilter (y:xs)
 
-fileName   = "data/twin primes less than 10e8"
+fileName   = "data/words.txt"
 edgeOfPrimes   = 100000000
 
 writePrimes = (writeFile fileName . init . tail . show . takeWhile (< edgeOfPrimes)) primes
@@ -105,27 +105,27 @@ runEntropy = do
     let lengthText =  fromIntegral $ length text
     let charFreqs  =  chrFreqs text
     let charProbs  =  fmap (/ genericLength text) $ chrFreqs text
-    let sortAndShow = (\f -> sequence . showColumn . fmap f . sortBy (\(a,b) (a0, b0) -> compare b0 b) . Map.toList)
+    let sortAndShow = (\f -> sequence_ . showColumn . fmap f . sortBy (\(a,b) (a0, b0) -> compare b0 b) . Map.toList)
 
     putStrLn "Probabilities of chars"
     sortAndShow id charProbs
 
-    putStrLn "Probabilities of chars on condition, that next one is known"
-    let charCondNextProbs  =  chrCondPrev charFreqs text
-    sortAndShow id charCondNextProbs
-    putStrLn ""
+    --putStrLn "Probabilities of chars on condition, that next one is known"
+    --let charCondNextProbs  =  chrCondPrev charFreqs text
+    --sortAndShow id charCondNextProbs
+    --putStrLn ""
 
-    putStrLn "Probabilities of chars on condition, that pevious one is known"
-    let charCondPrevProbs  =  chrCondNext charFreqs text
-    --sortAndShow (\(cc, d) -> (rev cc, d)) charCondPrevProbs
-    putStrLn ""
+    --putStrLn "Probabilities of chars on condition, that pevious one is known"
+    --let charCondPrevProbs  =  chrCondNext charFreqs text
+    ----sortAndShow (\(cc, d) -> (rev cc, d)) charCondPrevProbs
+    --putStrLn ""
 
-    --Entropy
-    putStrLn $ "Entropy = " ++ (show . entropy . elems) charProbs
-    --Full Conditional Entropy
-    putStrLn $ "Full Conditional on previous Entropy = " ++ (show . fullCondEntropy charCondPrevProbs) charProbs
-    --Full Conditional Entropy
-    putStrLn $ "Full Conditional on next Entropy = " ++ (show . fullCondEntropy charCondNextProbs) charProbs
+    ----Entropy
+    --putStrLn $ "Entropy = " ++ (show . entropy . elems) charProbs
+    ----Full Conditional Entropy
+    --putStrLn $ "Full Conditional on previous Entropy = " ++ (show . fullCondEntropy charCondPrevProbs) charProbs
+    ----Full Conditional Entropy
+    --putStrLn $ "Full Conditional on next Entropy = " ++ (show . fullCondEntropy charCondNextProbs) charProbs
 
 showColumn :: Show a => [a] -> [IO ()]
 showColumn = map (\x -> putStrLn (show x))
