@@ -10,11 +10,13 @@ module Entropy
 
 
 import qualified Data.Map as Map
-import Data.Map (Map, keys, elems, mapWithKey)
+import Data.Map (Map, keys, elems, mapWithKey, (!))
+import qualified Data.Map as Map (map)
 import Data.List
 import qualified Data.Set as Set
 import Data.Tuple (swap)
 
+import Debug.Trace
 import Data.Numbers.Primes as Primes
 
 primeStream :: [Int]
@@ -59,6 +61,8 @@ toCharCond []  = []
 toCharCond [x] = []
 toCharCond (x:x0:xs) = (x :| x0) : toCharCond (x0:xs)
 
+toPairs = toCharCond
+
 normalizePrev chrFreqs (_ :| cc) frq = let
                               Just a = Map.lookup cc chrFreqs
                           in
@@ -71,6 +75,7 @@ normalizeNext chrFreqs (c :| _) frq = let
 
 emptyMap allPairChars = Map.fromList [(cs :| csNext, 0) | cs <- allPairChars, csNext <- allPairChars]
 
+
 chrCondProbs :: (CharCond -> Double -> Double) -> String -> Map CharCond Double
 chrCondProbs normalize text = mapWithKey normalize $ foldl' ccToFreqs (emptyMap allPairChars) (toCharCond text) where
     allPairChars = Set.toAscList . Set.fromList $ text
@@ -80,16 +85,30 @@ chrCondProbs normalize text = mapWithKey normalize $ foldl' ccToFreqs (emptyMap 
 chrCondPrev chrFreqs = chrCondProbs (normalizePrev chrFreqs)
 chrCondNext chrFreqs = chrCondProbs (normalizeNext chrFreqs)
 
+check = id 
+--check = trace "1"
 
-fullCondEntropy :: Map CharCond Double -> Map Char Double -> Double
-fullCondEntropy condProbs probs = (negate . sum . elems . mapWithKey f) condProbs where
-    f (c :| cc) frq = let
-                          Just condProb = Map.lookup (c :| cc) condProbs
-                          Just prob     = Map.lookup cc probs
-                      in
-                          if abs condProb > 1e-17
-                              then prob * condProb * logBase 2 condProb
-                              else 0
+elemProbs :: Ord a => [a] -> Map a Double
+elemProbs text = check $ Map.map (/ (fromIntegral $ length text)) $ chrFreqs text
+
+elemProbs' text = Map.map (/ ((fromIntegral $ length text) + 1)) $ chrFreqs text
+
+jointProbs = elemProbs' . toPairs
+
+condProbs :: String -> Map CharCond Double
+condProbs text = mapWithKey toCondProbs $ jointProbs text where
+    probs = elemProbs text
+    toCondProbs (c :| cc) jp = jp / probs ! c
+
+fullCondEntropy :: String -> Double
+fullCondEntropy text = (negate . sum . elems . mapWithKey f) $ condProbs text where
+    jps = jointProbs text
+    f (c :| cc) condProb = let
+                              jp = jps ! (c :| cc)
+                           in
+                              if abs condProb > 1e-17
+                                  then jp * logBase 2 condProb
+                                  else 0
 
 mapTo2D :: Map CharCond Double -> [[Double]]
 mapTo2D = (map . map $ snd) . (foldr to2d []) . (Map.toList) where
@@ -99,38 +118,35 @@ mapTo2D = (map . map $ snd) . (foldr to2d []) . (Map.toList) where
 
 runEntropy = do
     text           <- (fmap $ filter (/= ',')) (readFile fileName)
-    let lengthText =  fromIntegral $ length text
-    let charFreqs  =  chrFreqs text
-    let charProbs  =  fmap (/ genericLength text) $ chrFreqs text
+    --text <- return "qe2"
+    text <- return $ take 11111 text
+    let charProbs  = elemProbs text
     let sortAndShow = (\f -> sequence_ . showColumn . fmap f . sortBy (\(a,b) (a0, b0) -> compare b0 b) . Map.toList)
+
+    --print text
 
     putStrLn "Probabilities of chars"
     sortAndShow id charProbs
 
-    putStrLn "Probabilities of chars on condition, that next one is known"
-    let charCondNextProbs  =  chrCondPrev charFreqs text
-    --sortAndShow id charCondNextProbs
-    putStrLn ""
+    putStrLn "Joint probabilities of chars"
+    sortAndShow id $ jointProbs text
 
-    putStrLn "Probabilities of chars on condition, that pevious one is known"
-    let charCondPrevProbs  =  chrCondNext charFreqs text
-    --sortAndShow (\(cc, d) -> (rev cc, d)) charCondPrevProbs
-    putStrLn ""
+    putStrLn "Conditional probabilities of chars"
+    sortAndShow id $ condProbs text
 
     --Entropy
     putStrLn $ "Entropy = " ++ (show . entropy . elems) charProbs
-    --Full Conditional Entropy
-    putStrLn $ "Full Conditional on previous Entropy = " ++ (show . fullCondEntropy charCondPrevProbs) charProbs
-    --Full Conditional Entropy
-    putStrLn $ "Full Conditional on next Entropy = " ++ (show . fullCondEntropy charCondNextProbs) charProbs
+
+    --Conditional Entropy
+    putStrLn $ "Conditional Entropy = " ++ (show $ fullCondEntropy text)
 
 showColumn :: Show a => [a] -> [IO ()]
 showColumn = map (\x -> putStrLn (show x))
 
-chrFreqs :: String -> Map Char Double
-chrFreqs = foldl' chrToFreqs (Map.empty) where
-
-    chrToFreqs m chr = Map.alter add chr m
-
+elemFreqs :: Ord a => [a] -> Map a Double
+elemFreqs = foldl' elemToFreqs (Map.empty) where
+    elemToFreqs m chr = Map.alter add chr m
     add Nothing  = Just   1.0
     add (Just x) = Just $ 1.0 + x
+
+chrFreqs = elemFreqs

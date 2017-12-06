@@ -13,7 +13,7 @@ import Debug.Trace
 
 import Data.Numbers.Primes as Primes
 
-import Entropy (chrFreqs, entropy)
+import Entropy (chrFreqs, entropy, fullCondEntropy, condProbs)
 
 fileWords = "data/words.txt"
 
@@ -57,9 +57,9 @@ textEntropy = (entropy . Map.elems . charProbs)
 arithmeticCoding :: Intervals -> String -> [Word8]
 arithmeticCoding invls = reverse . (1:) . fst . foldl encode ([],(0.0,1.0)) . map (invls !) where
     writeBits (bs, i@(l,r))
-         | isSup 0.5 i = writeBits (0:bs, updateWorkInvl0 i)
-         | isInf 0.5 i = writeBits (1:bs, updateWorkInvl1 i)
-         | otherwise   = (bs, i)
+         | isSup 0.5 i = traceShow ("q", 0:bs, updateWorkInvl0 i) $ writeBits (0:bs, updateWorkInvl0 i)
+         | isInf 0.5 i = traceShow ("w", 1:bs, updateWorkInvl1 i) $ writeBits (1:bs, updateWorkInvl1 i)
+         | otherwise   = traceShow ("e", bs, i) $ (bs, i)
     encode (bs, wInvl@(wl, wr)) chInvl@(chl, chr) = writeBits $ (bs, mapInvl wInvl chInvl)
 
 {-- View --}
@@ -79,7 +79,7 @@ decodingTest :: Intervals -> Double -> String
 decodingTest invls v = unfoldr decode invls where
     decode workInvls = Just $ let
                                  (char, invl) = (fromJust . find (\(_, i) -> v `belong` i) . Map.toList) workInvls
-                             in
+                              in
                                  --traceShow (char, Map.map (mapInvl invl) invls) (char, Map.map (mapInvl invl) invls)
                                  (char, Map.map (mapInvl invl) invls)
 
@@ -90,16 +90,20 @@ runAC = do
     print text
 
 runShortAC = do
-    text <- return "cabbdqpcac"
+    text <- return "cabwe"
     print text
     let probs = charProbs text
     let intervals  = charProbsToProbModel probs
     let len = length text
-    print len
+    putStrLn $ "Text length " ++ show len
+    putStrLn $ "Entropy " ++ show (textEntropy text)
+    putStrLn $ "Full Conditional Entropy " ++ show (fullCondEntropy text)
     showColumnList $ mapToSortBySndList probs
     showColumnList $ Map.toList intervals
     let ac = arithmeticCoding intervals text
     print ac
+    let lengthCode = length ac
+    putStrLn $ "Bits/Symbol " ++ (show $ fromIntegral lengthCode / fromIntegral len)
     let value = getDoubleByBytes ac
     print value
     print $ take len $ decodingTest intervals value
@@ -107,14 +111,23 @@ runShortAC = do
 
 runAC' = do
     _text <- (fmap . fmap) toLower (readFile fileWords)
-    let text = take 3000000 _text
+    let text = take 5 _text
+    let text = "dacbe"
+    print text
     let probs = charProbs text
     let intervals = charProbsToProbModel probs
+    putStrLn $ show intervals
     let len = length text
-    print $ "Text length " ++ show len
-    print $ "Entropy " ++ show (textEntropy text)
+    putStrLn $ "Text length " ++ show len
+    putStrLn $ "Entropy " ++ show (textEntropy text)
+    putStrLn $ "Full Conditional Entropy " ++ show (fullCondEntropy text)
     --showColumnList $ mapToSortBySndList probs
     --showColumnList $ Map.toList intervals
     let ac = arithmeticCoding intervals text
-    print . show . last $ ac
+    print ac
+    let lengthCode = length ac
+    putStrLn $ "Bits/Symbol " ++ (show $ fromIntegral lengthCode / fromIntegral len)
+    let value = getDoubleByBytes ac
+    print value
+    print $ take len $ decodingTest intervals value
     return ()
