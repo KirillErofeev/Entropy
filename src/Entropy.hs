@@ -29,13 +29,14 @@ twinPrimesStream = 3 : 5 : 7 : (twinFilter . dropWhile (<= 7)) primes where
      twinFilter (x:y:xs) | y - x == 2 = x : y : twinFilter xs
                          | otherwise  = twinFilter (y:xs)
 
-fileName   = "data/words.txt"
+fileName   = "data/primes10e5"
 edgeOfPrimes   = 100000000
 
 writePrimes = (writeFile fileName . init . tail . show . takeWhile (< edgeOfPrimes)) primes
 
 writeTwinPrimes = (writeFile fileName . init . tail . show . takeWhile (< edgeOfPrimes)) twinPrimesStream
 
+entropy :: [Double] -> Double
 entropy = negate . sum . map (\p -> p * logBase 2 p)
 
 data CharCond = (:|) {leftCc :: Char, rightCc :: Char} deriving (Eq, Read)
@@ -68,14 +69,12 @@ normalizeNext chrFreqs (c :| _) frq = let
                           in
                               frq / a
 
-emptyMap allChars = Map.fromList [(cs :| csNext, 0) | cs <- allChars, csNext <- allChars]
+emptyMap allPairChars = Map.fromList [(cs :| csNext, 0) | cs <- allPairChars, csNext <- allPairChars]
 
 chrCondProbs :: (CharCond -> Double -> Double) -> String -> Map CharCond Double
-chrCondProbs normalize text = mapWithKey normalize $ foldl' ccToFreqs (emptyMap allChars) (toCharCond text) where
-    allChars = Set.toAscList . Set.fromList $ text
-
+chrCondProbs normalize text = mapWithKey normalize $ foldl' ccToFreqs (emptyMap allPairChars) (toCharCond text) where
+    allPairChars = Set.toAscList . Set.fromList $ text
     ccToFreqs m cc = Map.alter add cc m
-
     add (Just x) = Just $ 1.0 + x
 
 chrCondPrev chrFreqs = chrCondProbs (normalizePrev chrFreqs)
@@ -84,7 +83,6 @@ chrCondNext chrFreqs = chrCondProbs (normalizeNext chrFreqs)
 
 fullCondEntropy :: Map CharCond Double -> Map Char Double -> Double
 fullCondEntropy condProbs probs = (negate . sum . elems . mapWithKey f) condProbs where
-
     f (c :| cc) frq = let
                           Just condProb = Map.lookup (c :| cc) condProbs
                           Just prob     = Map.lookup cc probs
@@ -101,7 +99,6 @@ mapTo2D = (map . map $ snd) . (foldr to2d []) . (Map.toList) where
 
 runEntropy = do
     text           <- (fmap $ filter (/= ',')) (readFile fileName)
-    --text           <- readFile fileName
     let lengthText =  fromIntegral $ length text
     let charFreqs  =  chrFreqs text
     let charProbs  =  fmap (/ genericLength text) $ chrFreqs text
@@ -110,22 +107,22 @@ runEntropy = do
     putStrLn "Probabilities of chars"
     sortAndShow id charProbs
 
-    --putStrLn "Probabilities of chars on condition, that next one is known"
-    --let charCondNextProbs  =  chrCondPrev charFreqs text
+    putStrLn "Probabilities of chars on condition, that next one is known"
+    let charCondNextProbs  =  chrCondPrev charFreqs text
     --sortAndShow id charCondNextProbs
-    --putStrLn ""
+    putStrLn ""
 
-    --putStrLn "Probabilities of chars on condition, that pevious one is known"
-    --let charCondPrevProbs  =  chrCondNext charFreqs text
-    ----sortAndShow (\(cc, d) -> (rev cc, d)) charCondPrevProbs
-    --putStrLn ""
+    putStrLn "Probabilities of chars on condition, that pevious one is known"
+    let charCondPrevProbs  =  chrCondNext charFreqs text
+    --sortAndShow (\(cc, d) -> (rev cc, d)) charCondPrevProbs
+    putStrLn ""
 
-    ----Entropy
-    --putStrLn $ "Entropy = " ++ (show . entropy . elems) charProbs
-    ----Full Conditional Entropy
-    --putStrLn $ "Full Conditional on previous Entropy = " ++ (show . fullCondEntropy charCondPrevProbs) charProbs
-    ----Full Conditional Entropy
-    --putStrLn $ "Full Conditional on next Entropy = " ++ (show . fullCondEntropy charCondNextProbs) charProbs
+    --Entropy
+    putStrLn $ "Entropy = " ++ (show . entropy . elems) charProbs
+    --Full Conditional Entropy
+    putStrLn $ "Full Conditional on previous Entropy = " ++ (show . fullCondEntropy charCondPrevProbs) charProbs
+    --Full Conditional Entropy
+    putStrLn $ "Full Conditional on next Entropy = " ++ (show . fullCondEntropy charCondNextProbs) charProbs
 
 showColumn :: Show a => [a] -> [IO ()]
 showColumn = map (\x -> putStrLn (show x))
