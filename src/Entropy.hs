@@ -64,14 +64,14 @@ toCharCond (x:x0:xs) = (x :| x0) : toCharCond (x0:xs)
 toPairs = toCharCond
 
 normalizePrev chrFreqs (_ :| cc) frq = let
-                              Just a = Map.lookup cc chrFreqs
-                          in
-                              frq / a
+                                           Just a = Map.lookup cc chrFreqs
+                                       in
+                                           frq / a
 
 normalizeNext chrFreqs (c :| _) frq = let
-                              Just a = Map.lookup c chrFreqs
-                          in
-                              frq / a
+                                          Just a = Map.lookup c chrFreqs
+                                      in
+                                          frq / a
 
 emptyMap allPairChars = Map.fromList [(cs :| csNext, 0) | cs <- allPairChars, csNext <- allPairChars]
 
@@ -89,9 +89,11 @@ check = id
 --check = trace "1"
 
 elemProbs :: Ord a => [a] -> Map a Double
-elemProbs text = check $ Map.map (/ (fromIntegral $ length text)) $ chrFreqs text
+elemProbs text = check $ Map.map (/ lengthText) $ chrFreqs text where
+    lengthText = fromIntegral $ length text
 
-elemProbs' text = Map.map (/ ((fromIntegral $ length text) + 1)) $ chrFreqs text
+elemProbs' text = Map.map (/ (lengthTextPlusOne)) $ chrFreqs text where
+    lengthTextPlusOne = fromIntegral $ (length text)
 
 jointProbs = elemProbs' . toPairs
 
