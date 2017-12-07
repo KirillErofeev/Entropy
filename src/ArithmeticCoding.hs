@@ -17,7 +17,7 @@ import Data.Numbers.Primes as Primes
 
 import Entropy (elemProbs', jointProbs, toPairs, chrFreqs, entropy, fullCondEntropy, condProbs, CharCond(..))
 
-fileWords = "data/words.txt"
+fileWords = "words.txt"
 
 {--Intervals--}
 type ProbabilityModel = Map Char Double
@@ -165,7 +165,7 @@ runShortAC = do
     let text = "dacbe"
     print text
     let probs = charProbs text
-    let intervals  = charProbsToProbModel probs
+    let intervals = charProbsToProbModel probs
     let len = length text
     putStrLn $ "Text length " ++ show len
     putStrLn $ "Entropy " ++ show (textEntropy text)
@@ -182,8 +182,8 @@ runShortAC = do
     return ()
 
 runAC' = do
-    _text <- (fmap . fmap) toLower (readFile fileWords)
-    let text = take 500001 _text
+    text <- (fmap . fmap) toLower (readFile fileWords)
+    --let text = take 50000001 _text
     let probs = charProbs text
     --print text
     --showColumnList $ Map.toList probs
@@ -191,36 +191,43 @@ runAC' = do
     let len = length text
     {--Information--}
     putStrLn $ "Text length " ++ show len
-    putStrLn $ "Entropy " ++ show (textEntropy text)
+    ---putStrLn $ "Entropy " ++ show (textEntropy text)
     --putStrLn $ "Full Conditional Entropy " ++ show (fullCondEntropy text)
     --showColumnList $ mapToSortBySndList probs
     --showColumnList $ Map.toList intervals
     {--Arithmetic Coding--}
-    putStrLn $ "\nArithmetic Coding:"
+    --putStrLn $ "\nArithmetic Coding:"
     let ac = arithmeticCoding intervals text
     let lengthCode = length ac
-    putStrLn $ "Size in bits " ++ (show $ lengthCode)
-    putStrLn $ "Bits/Symbol " ++ (show $ fromIntegral lengthCode / fromIntegral len)
-    BS.writeFile "data/AC" $ (BS.pack . squezze) ac
+    --putStrLn $ "Size in bits " ++ (show $ lengthCode)
+    --putStrLn $ "Bits/Symbol " ++ (show $ fromIntegral lengthCode / fromIntegral len)
+    let sqAc = squezze ac
+    --putStrLn $ "Size file in bytes " ++ (show $ length sqAc)
+    BS.writeFile "HaskellAC" $ BS.pack sqAc
+    putStrLn $ "Write in HaskellAC"
     {--Pair AC--}
-    putStrLn $ "\nPair AC:"
-    let pp = pairProbs text
-    putStrLn $ "Pair Entropy " ++ show (textEntropy $ toDisPairs text)
-    putStrLn $ "Pair Entropy / Symbol " ++ show ((/2) $ textEntropy $ toDisPairs text)
-    let pi = probsToProbModel pp
-    let ac = pairAC pi text
-    let lengthCode = length ac
-    putStrLn $ "Size in bits " ++ (show $ lengthCode)
-    putStrLn $ "Bits/Symbol " ++ (show $ fromIntegral lengthCode / fromIntegral len)
-    BS.writeFile "data/pairAC" $ (BS.pack . squezze) ac
-    {--Adaptive AC--}
-    putStrLn $ "\nAdaptive AC:"
-    let ac = adaptAC text
-    let lengthCode = length ac
-    putStrLn $ "Size in bits " ++ (show $ lengthCode)
-    putStrLn $ "Bits/Symbol " ++ (show $ fromIntegral lengthCode / fromIntegral len)
-    BS.writeFile "data/adaptAC" $ (BS.pack . squezze) ac
-    return ()
+    --putStrLn $ "\nPair AC:"
+    --let pp = pairProbs text
+    --putStrLn $ "Pair Entropy " ++ show (textEntropy $ toDisPairs text)
+    --putStrLn $ "Pair Entropy / Symbol " ++ show ((/2) $ textEntropy $ toDisPairs text)
+    --let pi = probsToProbModel pp
+    --let ac = pairAC pi text
+    --let lengthCode = length ac
+    --putStrLn $ "Size in bits " ++ (show $ lengthCode)
+    --putStrLn $ "Bits/Symbol " ++ (show $ fromIntegral lengthCode / fromIntegral len)
+    --let sqAc = squezze ac
+    --putStrLn $ "Size file in bytes " ++ (show $ length sqAc)
+    --BS.writeFile "data/PairAC" $ BS.pack sqAc
+    --{--Adaptive AC--}
+    --putStrLn $ "\nAdaptive AC:"
+    --let ac = adaptAC text
+    --let lengthCode = length ac
+    --putStrLn $ "Size in bits " ++ (show $ lengthCode)
+    --putStrLn $ "Bits/Symbol " ++ (show $ fromIntegral lengthCode / fromIntegral len)
+    --let sqAc = squezze ac
+    --putStrLn $ "Size file in bytes " ++ (show $ length sqAc)
+    --BS.writeFile "data/adaptAC" $ (BS.pack . squezze) ac
+    --return ()
 
 condAC :: CondIntervals -> String -> [Word8]
 condAC ci text = (reverse . (1:) . fst        .
