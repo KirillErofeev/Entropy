@@ -4,7 +4,7 @@ module ArithmeticCoding where
 import Data.List (sortBy, foldl', (\\), unfoldr, find, nub)
 import Data.Char (toLower)
 import Data.Map (Map(..), (!))
-import qualified Data.Map as Map (size, toList, empty, alter, fromList, map, elems)
+import qualified Data.Map as Map (union, filterWithKey, size, toList, empty, alter, fromList, map, elems)
 import Data.Ratio (numerator, denominator, (%))
 import Data.Maybe (fromJust)
 import Data.Word8 (Word8)
@@ -20,10 +20,11 @@ import Entropy (elemProbs', jointProbs, toPairs, chrFreqs, entropy, fullCondEntr
 fileWords = "words.txt"
 
 {--Intervals--}
-type ProbabilityModel = Map Char Double
-type Intervals        = Map Char Interval
-type CondIntervals    = Map CharCond Interval
-type Interval         = (Double, Double)
+type ProbabilityModel     = Map Char Double
+type CondProbabilityModel = Map CharCond Double
+type Intervals            = Map Char Interval
+type CondIntervals        = Map CharCond Interval
+type Interval             = (Double, Double)
 
 data AdaptMap k v = AdaptMap {getMap :: (Map k v), getSumWeight :: Double}
 
@@ -68,6 +69,15 @@ probsToProbModel cp = Map.fromList $ foldr toInvls [] (Map.toList cp) where
 
 charProbsToProbModel = probsToProbModel
 
+splitCondProbsByChar chars condProbs = map getMap (nub chars) where
+    filt char (c :| _) _ | char == c = True
+                         | otherwise = False
+    getMap char = Map.filterWithKey (filt char) condProbs
+
+--condProbsToProbModel = undefined
+condProbsToProbModel :: String -> CondProbabilityModel -> CondIntervals
+condProbsToProbModel text = foldr Map.union Map.empty . map probsToProbModel . splitCondProbsByChar text 
+
 --textEntropy :: String -> Double
 textEntropy = (entropy . Map.elems . charProbs)
 
@@ -79,6 +89,17 @@ arithmeticCoding invls = reverse . (1:) . fst . foldl' encode ([],(0.0,1.0)) . m
          | isInf 0.5 i = writeBits (1:bs, updateWorkInvl1 i)
          | otherwise   = (bs, i)
     encode (bs, wInvl@(wl, wr)) chInvl@(chl, chr) = writeBits $ (bs, mapInvl wInvl chInvl)
+
+--condAC :: Intervals -> String -> [Word8]
+--condAC invls = 
+--        reverse . (1:) . fst         . 
+--        foldl' encode ([],(0.0,1.0)) . 
+--        map (invls !) . toCharCond . ('\n' :) where
+--    writeBits (bs, i@(l,r))
+--         | isSup 0.5 i = writeBits (0:bs, updateWorkInvl0 i)
+--         | isInf 0.5 i = writeBits (1:bs, updateWorkInvl1 i)
+--         | otherwise   = (bs, i)
+--    encode (bs, wInvl@(wl, wr)) chInvl@(chl, chr) = writeBits $ (bs, mapInvl wInvl chInvl)
 
 pairProbs = elemProbs' . toDisPairs
 
@@ -182,60 +203,70 @@ runShortAC = do
     return ()
 
 runAC' = do
-    text <- (fmap . fmap) toLower (readFile fileWords)
-    --let text = take 50000001 _text
+    _text <- (fmap . fmap) toLower (readFile fileWords)
+    let text = take 500001 _text
     let probs = charProbs text
+    let pairPrb = pairProbs text
     --print text
     --showColumnList $ Map.toList probs
     let intervals = charProbsToProbModel probs
     let len = length text
     {--Information--}
     putStrLn $ "Text length " ++ show len
-    ---putStrLn $ "Entropy " ++ show (textEntropy text)
-    --putStrLn $ "Full Conditional Entropy " ++ show (fullCondEntropy text)
+    putStrLn $ "Entropy " ++ show (textEntropy (text :: String))
+    putStrLn $ "Full Conditional Entropy " ++ show (fullCondEntropy text)
     --showColumnList $ mapToSortBySndList probs
     --showColumnList $ Map.toList intervals
     {--Arithmetic Coding--}
-    --putStrLn $ "\nArithmetic Coding:"
+    putStrLn $ "\nArithmetic Coding:"
     let ac = arithmeticCoding intervals text
     let lengthCode = length ac
-    --putStrLn $ "Size in bits " ++ (show $ lengthCode)
-    --putStrLn $ "Bits/Symbol " ++ (show $ fromIntegral lengthCode / fromIntegral len)
+    putStrLn $ "Size in bits " ++ (show $ lengthCode)
+    putStrLn $ "Bits/Symbol " ++ (show $ fromIntegral lengthCode / fromIntegral len)
     let sqAc = squezze ac
-    --putStrLn $ "Size file in bytes " ++ (show $ length sqAc)
-    BS.writeFile "HaskellAC" $ BS.pack sqAc
+    putStrLn $ "Size file in bytes " ++ (show $ length sqAc)
+    BS.writeFile "src/HaskellAC" $ BS.pack sqAc
     putStrLn $ "Write in HaskellAC"
     {--Pair AC--}
-    --putStrLn $ "\nPair AC:"
-    --let pp = pairProbs text
-    --putStrLn $ "Pair Entropy " ++ show (textEntropy $ toDisPairs text)
-    --putStrLn $ "Pair Entropy / Symbol " ++ show ((/2) $ textEntropy $ toDisPairs text)
-    --let pi = probsToProbModel pp
-    --let ac = pairAC pi text
-    --let lengthCode = length ac
-    --putStrLn $ "Size in bits " ++ (show $ lengthCode)
-    --putStrLn $ "Bits/Symbol " ++ (show $ fromIntegral lengthCode / fromIntegral len)
-    --let sqAc = squezze ac
-    --putStrLn $ "Size file in bytes " ++ (show $ length sqAc)
-    --BS.writeFile "data/PairAC" $ BS.pack sqAc
-    --{--Adaptive AC--}
-    --putStrLn $ "\nAdaptive AC:"
-    --let ac = adaptAC text
-    --let lengthCode = length ac
-    --putStrLn $ "Size in bits " ++ (show $ lengthCode)
-    --putStrLn $ "Bits/Symbol " ++ (show $ fromIntegral lengthCode / fromIntegral len)
-    --let sqAc = squezze ac
-    --putStrLn $ "Size file in bytes " ++ (show $ length sqAc)
-    --BS.writeFile "data/adaptAC" $ (BS.pack . squezze) ac
-    --return ()
+    putStrLn $ "\nPair AC:"
+    putStrLn $ "Pair Entropy " ++ show (textEntropy $ toDisPairs text )
+    putStrLn $ "Pair Entropy / Symbol " ++ show ((/2) $ textEntropy $ toDisPairs text)
+    let pi = probsToProbModel pairPrb
+    let ac = pairAC pi text
+    let lengthCode = length ac
+    putStrLn $ "Size in bits " ++ (show $ lengthCode)
+    putStrLn $ "Bits/Symbol " ++ (show $ fromIntegral lengthCode / fromIntegral len)
+    let sqAc = squezze ac
+    putStrLn $ "Size file in bytes " ++ (show $ length sqAc)
+    BS.writeFile "data/PairAC" $ BS.pack sqAc
+    {--Condition AC--}
+    putStrLn $ "\nCondition AC:"
+    let condPrb = condProbs ('\n' : text)
+    let intervals = condProbsToProbModel text condPrb
+    let ac = condAC intervals text
+    let lengthCode = length ac
+    putStrLn $ "Size in bits " ++ (show $ lengthCode)
+    putStrLn $ "Bits/Symbol " ++ (show $ fromIntegral lengthCode / fromIntegral len)
+    let sqAc = squezze ac
+    putStrLn $ "Size file in bytes " ++ (show $ length sqAc)
+    BS.writeFile "data/condAC" $ (BS.pack . squezze) ac
+    {--Adaptive AC--}
+    putStrLn $ "\nAdaptive AC:"
+    let ac = adaptAC text
+    let lengthCode = length ac
+    putStrLn $ "Size in bits " ++ (show $ lengthCode)
+    putStrLn $ "Bits/Symbol " ++ (show $ fromIntegral lengthCode / fromIntegral len)
+    let sqAc = squezze ac
+    putStrLn $ "Size file in bytes " ++ (show $ length sqAc)
+    BS.writeFile "data/adaptAC" $ (BS.pack . squezze) ac
+    return ()
 
 condAC :: CondIntervals -> String -> [Word8]
-condAC ci text = (reverse . (1:) . fst        .
+condAC ci = (reverse . (1:) . fst        .
                             foldl' encode ([],(0.0,1.0)) .
-                            map (ci !) . toPairs) ('\n' : text) where
+                            map (ci !) . toPairs) where
     writeBits (bs, i@(l,r))
          | isSup 0.5 i = writeBits (0:bs, updateWorkInvl0 i)
          | isInf 0.5 i = writeBits (1:bs, updateWorkInvl1 i)
          | otherwise   = (bs, i)
     encode (bs, wInvl@(wl, wr)) chInvl@(chl, chr) = writeBits $ (bs, mapInvl wInvl chInvl)
-

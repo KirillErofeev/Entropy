@@ -93,7 +93,7 @@ elemProbs text = check $ Map.map (/ lengthText) $ chrFreqs text where
     lengthText = fromIntegral $ length text
 
 elemProbs' text = Map.map (/ (lengthTextPlusOne)) $ chrFreqs text where
-    lengthTextPlusOne = fromIntegral $ (length text)
+    lengthTextPlusOne = fromIntegral $ (length text + 1)
 
 jointProbs = elemProbs' . toPairs
 
