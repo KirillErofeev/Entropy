@@ -9,6 +9,7 @@ import Data.List
 import Data.Word8
 
 type ProbabilityModel     = Map Char Double
+type ProbabilityModelP a  = Map a Double
 type CondProbabilityModel = Map CharCond Double
 type Intervals            = Map Char Interval
 type CondIntervals        = Map CharCond Interval
@@ -27,12 +28,12 @@ instance Ord a => Ord (Tree a) where
     --compare (Node a as) (Node b bs) | compare a b == EQ = compare as bs
     --                                | otherwise         = compare a b
 
-newtype ProbOrderedTree = POT {getTree :: (Tree ([Char], Double))}
+newtype ProbOrderedTree a = POT {getTree :: (Tree ([a], Double))}
 
-instance Eq ProbOrderedTree where
+instance Eq a => Eq (ProbOrderedTree a) where
     (==) (POT (Node (_, a) _ )) (POT ((Node (_, b) _) )) = a == b
 
-instance Ord ProbOrderedTree where
+instance Ord a => Ord (ProbOrderedTree a) where
     compare (POT (Node (csl, l) _ )) (POT ((Node (csr, r) _) )) = compare (l, csl) (r, csr)
 
 data AdaptMap k v = AdaptMap {getMap :: (Map k v), getSumWeight :: Double}

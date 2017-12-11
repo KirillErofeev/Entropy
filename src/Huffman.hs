@@ -4,20 +4,21 @@ import qualified Data.Set as Set (insert, toList, map, size, foldr, union, empty
 import Data.Set (Set(..),findMin, deleteMin, deleteFindMin)
 import qualified Data.Map as Map (empty)
 import Data.Map (Map(..), (!), unionWith, alter, foldMapWithKey)
-import Types (ProbOrderedTree(..), Code, ProbabilityModel, CodeTree, SetProbabilityTrees)
+import Types (ProbOrderedTree(..), Code, ProbabilityModel, ProbabilityModelP, CodeTree, SetProbabilityTrees)
 import Data.Tree
 import ArithmeticCoding (charProbs)
 import Data.Word8
 import Stat (bitSymbolRat)
+import Entropy (toPairs)
 
-encode :: Code -> String -> [Word8]
+--encode :: Ord a => Code -> [a] -> [Word8]
 encode code = concatMap (code !)
 
-probabilityModelToSetTrees :: ProbabilityModel -> Set (Tree ([Char], Double))
+probabilityModelToSetTrees :: Ord a => ProbabilityModelP a -> Set (Tree ([a], Double))
 probabilityModelToSetTrees = foldMapWithKey toSet where
     toSet char pr = Set.singleton $ Node (return char, pr) []
 
-setTreesToCodeTree :: SetProbabilityTrees -> CodeTree
+--setTreesToCodeTree :: SetProbabilityTrees -> CodeTree
 setTreesToCodeTree trees 
     | Set.size trees == 1 = (head . Set.toList) $ (Set.map . fmap) fst trees
     | Set.size trees > 1  =
@@ -36,7 +37,7 @@ setTreesToCodeTree trees
                         in 
                             (Set.map getTree trees1, (getTree min0, getTree min1))
 
-codeTreeToCode :: CodeTree -> Code
+--codeTreeToCode :: CodeTree -> Code
 codeTreeToCode tree = h (-1) tree where
     h b (Node cs ts) = foldr mapAdd (ini cs b) (map (uncurry h) $ zip [0..] ts) where
     mapAdd = unionWith (++)
@@ -46,7 +47,7 @@ codeTreeToCode tree = h (-1) tree where
     add' b Nothing   = Just $ [b]
     add' b (Just bs) = Just $ b:bs
 
-huffmanCode :: String -> [Word8]
+--huffmanCode :: Ord a => [a] -> [Word8]
 huffmanCode text = flip encode text           $
                    (codeTreeToCode            .
                    setTreesToCodeTree         .
@@ -56,7 +57,7 @@ huffmanCode text = flip encode text           $
 test = "aaaaaaccbb"
 runHuffman text = do
     let code = huffmanCode text
-    putStrLn "Huffman: "
+    putStrLn "\nHuffman: "
     putStrLn $ "Bits/Symbol " ++ (show $ bitSymbolRat text code)
     --putStrLn $ drawTree $
     --               (setTreesToCodeTree         .
@@ -66,4 +67,8 @@ runHuffman text = do
     --               setTreesToCodeTree         .
     --               probabilityModelToSetTrees .
     --               charProbs) text
+    let pt = toPairs text
+    let codePair = (huffmanCode . toPairs) text
+    putStrLn "\nHuffman pair: "
+    putStrLn $ "Bits/Symbol " ++ (show $ bitSymbolRat pt codePair / 2)
     return ()
