@@ -1,13 +1,5 @@
 {-# LANGUAGE NoMonomorphismRestriction #-}
-module Entropy
---       (
---       Primes.primes
---      ,run
---      ,writePrimes
---      ,swap
---       )
-       where
-
+module Entropy where
 
 import qualified Data.Map as Map
 import Data.Map (Map, keys, elems, mapWithKey, (!))
@@ -16,8 +8,9 @@ import Data.List
 import qualified Data.Set as Set
 import Data.Tuple (swap)
 
-import Debug.Trace
 import Data.Numbers.Primes as Primes
+
+import Types (CharCond(..))
 
 primeStream :: [Int]
 primeStream = 2 : [x | x <- [3..],
@@ -40,20 +33,6 @@ writeTwinPrimes = (writeFile fileName . init . tail . show . takeWhile (< edgeOf
 
 entropy :: [Double] -> Double
 entropy = negate . sum . map (\p -> p * logBase 2 p)
-
-data CharCond = (:|) {leftCc :: Char, rightCc :: Char} deriving (Eq, Read)
-
-instance Show CharCond where
-    show (c :| cc) = show c ++ "|" ++ show cc
-
-instance Ord CharCond where
-    compare (a :| b) (a0 :| b0) = (a, b) `compare` (a0, b0)
-
-newtype OrdFirst = OrdFirst {get :: CharCond}  deriving (Show, Eq)
-
-instance Ord OrdFirst where
-    compare (OrdFirst (a :| b)) (OrdFirst (a0 :| b0)) = a `compare` a0
-
 
 rev (l :| r) = r :| l
 

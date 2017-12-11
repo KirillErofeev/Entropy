@@ -4,10 +4,17 @@
 
 module Main where
 
+import Data.Char (toLower)
 import Lib
 import Entropy
 import ArithmeticCoding
+import Huffman
+
+fileWords = "words.txt"
 
 main :: IO ()
-main = runAC'
---main = (writeFile "primes10e7" . init . tail . show . take 10000000) primes
+main = do 
+    _text <- (fmap . fmap) toLower (readFile fileWords)
+    let text = take 500001 _text
+    runAC' text 
+    runHuffman text
