@@ -71,4 +71,5 @@ runHuffman text = do
     let codePair = (huffmanCode . toPairs) text
     putStrLn "\nHuffman pair: "
     putStrLn $ "Bits/Symbol " ++ (show $ bitSymbolRat pt codePair / 2)
+    putStrLn "\n\n"
     return ()

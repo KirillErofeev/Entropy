@@ -9,6 +9,7 @@ import Lib
 import Entropy
 import ArithmeticCoding
 import Huffman
+import ShannonFano (runSF)
 
 fileWords = "words.txt"
 
@@ -16,5 +17,6 @@ main :: IO ()
 main = do 
     _text <- (fmap . fmap) toLower (readFile fileWords)
     let text = take 500001 _text
-    runAC' text 
+    runSF text
     runHuffman text
+    runAC' text 

@@ -7,6 +7,7 @@ import Data.Map (Map(..))
 import qualified Data.Map as Map (fromList, map, alter)
 import Data.List 
 import Data.Word8
+import Data.Monoid (Sum(..), getSum)
 
 type ProbabilityModel     = Map Char Double
 type ProbabilityModelP a  = Map a Double
@@ -80,3 +81,7 @@ newtype OrdFirst = OrdFirst {get :: CharCond}  deriving (Show, Eq)
 
 instance Ord OrdFirst where
     compare (OrdFirst (a :| b)) (OrdFirst (a0 :| b0)) = a `compare` a0
+
+sumPM :: ProbabilityModelP a -> Double
+sumPM = getSum . foldMap (Sum)
+
