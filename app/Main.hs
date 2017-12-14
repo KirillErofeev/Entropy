@@ -9,7 +9,7 @@ import Lib
 import Entropy
 import ArithmeticCoding
 import Huffman
-import ShannonFano (runSF)
+import ShannonFano 
 
 fileWords = "words.txt"
 

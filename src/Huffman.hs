@@ -54,7 +54,6 @@ huffmanCode text = flip encode text           $
                    probabilityModelToSetTrees .
                    charProbs) text
 
-test = "aaaaaaccbb"
 runHuffman text = do
     let code = huffmanCode text
     putStrLn "\nHuffman: "
