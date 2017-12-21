@@ -59,13 +59,13 @@ runSF text = do
     let bsr = bitSymbolfRat text code
     BS.writeFile "data/sf" $ (BS.pack . squezze . take (round $ fromIntegral (length text) * bsr))code 
     putStrLn $ "Bits/Symbol " ++ (show bsr)  
+    putStrLn $ "Write in sf"
     let pt = toPairs text
     let code = (sfCode' . toPairs) text
-    putStrLn "\nShannon pair: "
     let bsr = bitSymbolCondRat'' text code
     BS.writeFile "data/condSf" $ (BS.pack . squezze . take (round $ fromIntegral (length text) * bsr))code 
-    putStrLn $ "Bits/Symbol " ++ (show bsr)
-    putStrLn "\n\n"
+    putStrLn $ "\nCondition Bits/Symbol " ++ (show bsr)
+    putStrLn $ "Write in condSf"
     return ()
     
 sfCode' text = flip encode text           $
