@@ -9,7 +9,7 @@ import Data.Tree
 import ArithmeticCoding (charProbs)
 import Data.Word8
 import Stat (bitSymbolRat)
-import Entropy (toPairs)
+import Entropy (toPairs, condProbs)
 
 --encode :: Ord a => Code -> [a] -> [Word8]
 encode code = concatMap (code !)
@@ -54,18 +54,21 @@ huffmanCode text = flip encode text           $
                    probabilityModelToSetTrees .
                    charProbs) text
 
+huffmanCondCode text = 
+                   --flip encode text           $
+                   (
+                   codeTreeToCode             .
+                   setTreesToCodeTree         .
+                   probabilityModelToSetTrees .
+                   condProbs
+                   ) 
+                   text
+
+test = "aaaaaaccbb"
 runHuffman text = do
     let code = huffmanCode text
     putStrLn "\nHuffman: "
     putStrLn $ "Bits/Symbol " ++ (show $ bitSymbolRat text code)
-    --putStrLn $ drawTree $
-    --               (setTreesToCodeTree         .
-    --               probabilityModelToSetTrees .
-    --               charProbs) text
-    --putStrLn $ show $ (codeTreeToCode            .
-    --               setTreesToCodeTree         .
-    --               probabilityModelToSetTrees .
-    --               charProbs) text
     let pt = toPairs text
     let codePair = (huffmanCode . toPairs) text
     putStrLn "\nHuffman pair: "

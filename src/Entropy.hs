@@ -55,7 +55,7 @@ normalizeNext chrFreqs (c :| _) frq = let
 emptyMap allPairChars = Map.fromList [(cs :| csNext, 0) | cs <- allPairChars, csNext <- allPairChars]
 
 
-chrCondProbs :: (CharCond -> Double -> Double) -> String -> Map CharCond Double
+--chrCondProbs :: (CharCond -> Double -> Double) -> String -> Map CharCond Double
 chrCondProbs normalize text = mapWithKey normalize $ foldl' ccToFreqs (emptyMap allPairChars) (toCharCond text) where
     allPairChars = Set.toAscList . Set.fromList $ text
     ccToFreqs m cc = Map.alter add cc m

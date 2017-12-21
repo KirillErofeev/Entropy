@@ -18,7 +18,10 @@ library
   exposed-modules:     Lib
                      , Entropy
                      , ArithmeticCoding
+                     , Huffman
                      , ShannonFano
+                     , Stat
+                     , Types
   build-depends:       base >= 4.7 && < 5
                      , primes
                      , containers
