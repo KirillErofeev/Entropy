@@ -2,6 +2,7 @@ module ShannonFano where
 
 import Data.Tree
 
+import Data.Word8
 import qualified Data.Map as Map (fromList, toList, empty)
 import Data.Map (lookupLT, Map(..), (!), unionWith, alter, foldMapWithKey)
 import Data.List
@@ -11,6 +12,8 @@ import Stat (bitSymbolRat)
 import Huffman 
 import Entropy (toPairs, elemProbs)
 import Types
+import Stat hiding (charProbs)
+import qualified Data.ByteString.Lazy as BS (pack, writeFile) 
 
 probabilityModelToRootTree :: Ord a => ProbabilityModelP a -> Tree (Map a Double)
 probabilityModelToRootTree pm = Node pm []
@@ -41,7 +44,6 @@ sfCode text = flip encode text           $
     a' (Just v) = Just $ 0 : v 
     z' = fst $ fromJust $ lookupLT 'z' (elemProbs text)
 
-test = "aaaaaaacbb"
 runSF' text = do
     --let code = sfCode text
     let pm = elemProbs text
@@ -49,30 +51,20 @@ runSF' text = do
     let sm = splitMapOnNearProb ' ' pm
     print sm
     putStrLn "\nHuffman: "
-    --putStrLn $ "Bits/Symbol " ++ (show $ bitSymbolRat text code)
-    ----putStrLn $ drawTree $
-    ----               (setTreesToCodeTree         .
-    ----               probabilityModelToSetTrees .
-    ----               charProbs) text
-    ----putStrLn $ show $ (codeTreeToCode            .
-    ----               setTreesToCodeTree         .
-    ----               probabilityModelToSetTrees .
-    ----               charProbs) text
-    --let pt = toPairs text
-    --let codePair = (sfCode . toPairs) text
-    --putStrLn "\nHuffman pair: "
-    --putStrLn $ "Bits/Symbol " ++ (show $ bitSymbolRat pt codePair / 2)
-    --putStrLn "\n\n"
     return ()
 
 runSF text = do
     let code = sfCode text
     putStrLn "\nShannonFano: "
-    putStrLn $ "Bits/Symbol " ++ (show $ bitSymbolRat text code)
+    let bsr = bitSymbolfRat text code
+    BS.writeFile "data/sf" $ (BS.pack . squezze . take (round $ fromIntegral (length text) * bsr))code 
+    putStrLn $ "Bits/Symbol " ++ (show bsr)  
     let pt = toPairs text
-    let codePair = (sfCode' . toPairs) text
+    let code = (sfCode' . toPairs) text
     putStrLn "\nShannon pair: "
-    putStrLn $ "Bits/Symbol " ++ (show $ bitSymbolRat pt codePair / 2)
+    let bsr = bitSymbolCondRat'' text code
+    BS.writeFile "data/condSf" $ (BS.pack . squezze . take (round $ fromIntegral (length text) * bsr))code 
+    putStrLn $ "Bits/Symbol " ++ (show bsr)
     putStrLn "\n\n"
     return ()
     

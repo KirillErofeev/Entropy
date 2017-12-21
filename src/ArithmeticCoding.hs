@@ -148,43 +148,43 @@ runAC' text = do
     putStrLn $ "\nArithmetic Coding:"
     let ac = arithmeticCoding intervals text
     let lengthCode = length ac
-    putStrLn $ "Size in bits " ++ (show $ lengthCode)
+    --putStrLn $ "Size in bits " ++ (show $ lengthCode)
     putStrLn $ "Bits/Symbol " ++ (show $ fromIntegral lengthCode / fromIntegral len)
     let sqAc = squezze ac
-    putStrLn $ "Size file in bytes " ++ (show $ length sqAc)
+    --putStrLn $ "Size file in bytes " ++ (show $ length sqAc)
     BS.writeFile "src/HaskellAC" $ BS.pack sqAc
-    putStrLn $ "Write in HaskellAC"
-    {--Pair AC--}
-    putStrLn $ "\nPair AC:"
-    putStrLn $ "Pair Entropy " ++ show (textEntropy $ toDisPairs text )
-    putStrLn $ "Pair Entropy / Symbol " ++ show ((/2) $ textEntropy $ toDisPairs text)
-    let pi = probsToIntervals pairPrb
-    let ac = pairAC pi text
-    let lengthCode = length ac
-    putStrLn $ "Size in bits " ++ (show $ lengthCode)
-    putStrLn $ "Bits/Symbol " ++ (show $ fromIntegral lengthCode / fromIntegral len)
-    let sqAc = squezze ac
-    putStrLn $ "Size file in bytes " ++ (show $ length sqAc)
-    BS.writeFile "data/PairAC" $ BS.pack sqAc
+    --putStrLn $ "Write in HaskellAC"
+    --{--Pair AC--}
+    --putStrLn $ "\nPair AC:"
+    --putStrLn $ "Pair Entropy " ++ show (textEntropy $ toDisPairs text )
+    --putStrLn $ "Pair Entropy / Symbol " ++ show ((/2) $ textEntropy $ toDisPairs text)
+    --let pi = probsToIntervals pairPrb
+    --let ac = pairAC pi text
+    --let lengthCode = length ac
+    --putStrLn $ "Size in bits " ++ (show $ lengthCode)
+    --putStrLn $ "Bits/Symbol " ++ (show $ fromIntegral lengthCode / fromIntegral len)
+    --let sqAc = squezze ac
+    --putStrLn $ "Size file in bytes " ++ (show $ length sqAc)
+    --BS.writeFile "data/PairAC" $ BS.pack sqAc
     {--Condition AC--}
     putStrLn $ "\nCondition AC:"
     let condPrb = condProbs ('\n' : text)
     let intervals = condProbsToProbModel text condPrb
     let ac = condAC intervals text
     let lengthCode = length ac
-    putStrLn $ "Size in bits " ++ (show $ lengthCode)
+    --putStrLn $ "Size in bits " ++ (show $ lengthCode)
     putStrLn $ "Bits/Symbol " ++ (show $ fromIntegral lengthCode / fromIntegral len)
     let sqAc = squezze ac
-    putStrLn $ "Size file in bytes " ++ (show $ length sqAc)
+    --putStrLn $ "Size file in bytes " ++ (show $ length sqAc)
     BS.writeFile "data/condAC" $ (BS.pack . squezze) ac
     {--Adaptive AC--}
     putStrLn $ "\nAdaptive AC:"
     let ac = adaptAC text
     let lengthCode = length ac
-    putStrLn $ "Size in bits " ++ (show $ lengthCode)
+    --putStrLn $ "Size in bits " ++ (show $ lengthCode)
     putStrLn $ "Bits/Symbol " ++ (show $ fromIntegral lengthCode / fromIntegral len)
     let sqAc = squezze ac
-    putStrLn $ "Size file in bytes " ++ (show $ length sqAc)
+    --putStrLn $ "Size file in bytes " ++ (show $ length sqAc)
     BS.writeFile "data/adaptAC" $ (BS.pack . squezze) ac
     return ()
 

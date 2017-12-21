@@ -8,8 +8,10 @@ import Types (ProbOrderedTree(..), Code, ProbabilityModel, ProbabilityModelP, Co
 import Data.Tree
 import ArithmeticCoding (charProbs)
 import Data.Word8
-import Stat (bitSymbolRat)
+import Stat hiding (charProbs)
 import Entropy (toPairs, condProbs)
+import qualified Data.ByteString.Lazy as BS (pack, writeFile) 
+import Data.Word8
 
 --encode :: Ord a => Code -> [a] -> [Word8]
 encode code = concatMap (code !)
@@ -55,7 +57,7 @@ huffmanCode text = flip encode text           $
                    charProbs) text
 
 huffmanCondCode text = 
-                   --flip encode text           $
+                   flip encode (toPairs text) $
                    (
                    codeTreeToCode             .
                    setTreesToCodeTree         .
@@ -69,9 +71,13 @@ runHuffman text = do
     let code = huffmanCode text
     putStrLn "\nHuffman: "
     putStrLn $ "Bits/Symbol " ++ (show $ bitSymbolRat text code)
+    let bsr = bitSymbolfRat text code
+    BS.writeFile "data/huffman" $ (BS.pack . squezze . take (round $ fromIntegral (length text) * bsr))code 
     let pt = toPairs text
-    let codePair = (huffmanCode . toPairs) text
+    let code = (huffmanCondCode) text
     putStrLn "\nHuffman pair: "
-    putStrLn $ "Bits/Symbol " ++ (show $ bitSymbolRat pt codePair / 2)
+    putStrLn $ "Bits/Symbol " ++ (show $ bitSymbolCondRat' text code)
+    let bsr = bitSymbolCondRat' text code
+    BS.writeFile "data/huffman" $ (BS.pack . squezze . take (round $ fromIntegral (length text) * bsr)) code 
     putStrLn "\n\n"
     return ()
