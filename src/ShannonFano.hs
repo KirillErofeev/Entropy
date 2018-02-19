@@ -15,6 +15,8 @@ import Types
 import Stat hiding (charProbs)
 import qualified Data.ByteString.Lazy as BS (pack, writeFile) 
 
+condPrs = id
+
 probabilityModelToRootTree :: Ord a => ProbabilityModelP a -> Tree (Map a Double)
 probabilityModelToRootTree pm = Node pm []
 
@@ -73,6 +75,7 @@ sfCode' text = flip encode text           $
                    codeTreeToCode            .
                    setTreesToCodeTree         .
                    probabilityModelToSetTrees .
+                   condPrs                    .
                    elemProbs) text
                    where
     a' (Just v) = Just $ 1:1:0 : 0 : v 

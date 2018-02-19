@@ -33,7 +33,7 @@ writePrimes = (writeFile fileName . init . tail . show . takeWhile (< edgeOfPrim
 writeTwinPrimes = (writeFile fileName . init . tail . show . takeWhile (< edgeOfPrimes)) twinPrimesStream
 
 entropy :: [Double] -> Double
-entropy = negate . sum . map (\p -> p * logBase 2 p)
+entropy ps = negate . sum . map (\p -> p * logBase 2 p) $ ps
 
 rev (l :| r) = r :| l
 
@@ -98,10 +98,9 @@ mapTo2D = (map . map $ snd) . (foldr to2d []) . (Map.toList) where
     to2d elem (l@(x:xs):xss) | (leftCc . fst) elem  == (leftCc . fst) x = (elem : l) : xss
     to2d elem (l@(x:xs):xss) | otherwise                                = [elem] : l : xss
 
-runEntropy = do
-    text           <- (fmap $ filter (/= ',')) (readFile fileName)
+runEntropy text = do
+    --text           <- (fmap $ filter (/= ',')) (readFile fileName)
     --text <- return "qe2"
-    text <- return $ take 11111 text
     let charProbs  = elemProbs text
     let sortAndShow = (\f -> sequence_ . showColumn . fmap f . sortBy (\(a,b) (a0, b0) -> compare b0 b) . Map.toList)
 
@@ -109,9 +108,6 @@ runEntropy = do
 
     putStrLn "Probabilities of chars"
     sortAndShow id charProbs
-
-    putStrLn "Joint probabilities of chars"
-    sortAndShow id $ jointProbs text
 
     putStrLn "Conditional probabilities of chars"
     sortAndShow id $ condProbs text

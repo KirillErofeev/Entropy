@@ -17,6 +17,7 @@ main :: IO ()
 main = do 
     _text <- (fmap . fmap) toLower (readFile fileWords)
     let text = take 500001 _text
-    runAC' text 
-    runSF text
+    runEntropy text
     runHuffman text
+    runSF text
+    runAC' text 
