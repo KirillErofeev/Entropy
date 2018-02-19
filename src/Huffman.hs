@@ -75,7 +75,7 @@ runHuffman text = do
     putStrLn $ "Write in huffman"
     let pt = toPairs text
     let code = (huffmanCondCode) text
-    putStrLn $ "\nCondition Bits/Symbol " ++ (show $ bitSymbolCondRat' text code)
+    putStrLn $ "Condition Bits/Symbol " ++ (show $ bitSymbolCondRat' text code)
     let bsr = bitSymbolCondRat' text code
     BS.writeFile "data/condHuffman" $ (BS.pack . squezze . take (round $ fromIntegral (length text) * bsr)) code 
     putStrLn $ "Write in condHuffman"
